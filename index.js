@@ -1,14 +1,3 @@
-const submitBtn = document.querySelector("#submitBtn");
-const refreshBtn = document.querySelector("#refreshBtn");
-const addBtn = document.querySelector(".addBtn");
-const removeBtn = document.querySelector("#removeBtn");
-let locationData = document.querySelector("#location")
-const form = document.getElementById("form");
-const apiKey = "b8629ff3a21c2ecfad8ae59fab192415";
-const url = `http://api.openweathermap.org/geo/1.0/direct`;
-const weatherUrl = `https://api.openweathermap.org/data/2.5/weather`
-
-
 class SavedArea {
     constructor(id, location, temp, humidity, description, time){
         this.id = id;
@@ -36,41 +25,70 @@ class SelectedAreas {
 }
 
 
-
+const submitBtn = document.querySelector("#submitBtn");
+const refreshBtn = document.querySelector("#refreshBtn");
+const addBtn = document.querySelector(".addBtn");
+const removeBtn = document.querySelector("#remBtn");
+const form = document.getElementById("form");
+const apiKey = "b8629ff3a21c2ecfad8ae59fab192415";
+const url = `http://api.openweathermap.org/geo/1.0/direct`;
+const weatherUrl = `https://api.openweathermap.org/data/2.5/weather`
+const tempParagraph = document.getElementById("temp")
+const humidityParagraph = document.getElementById("humidity")
+const descriptionParagraph = document.getElementById("description")
+const timeParagraph = document.getElementById("time")
+const locationH4 = document.getElementById("location")
+const areaSaved = document.querySelector('#wishListContainer > ul')
 let selectedAreas = new SelectedAreas();
 const cityName = document.getElementById("city");
 const stateCode = document.getElementById("state");
 const countryCode = document.querySelector("#country");
 
 form.addEventListener("submit", (event) => {
-    locationData.textContent = `${cityName.value}, ${stateCode.value}, ${countryCode.value}`;
-    fetchArea(event, cityName, stateCode, countryCode);
+    locationH4.textContent = `${cityName.value}, ${stateCode.value}, ${countryCode.value}`;
+    fetchArea(event, cityName.value, stateCode.value, countryCode.value);
 });
 
-function addThing(){
+function addThing(e){
     let temp = document.getElementById("temp");
     let humidity = document.getElementById("humidity");
     let description = document.getElementById("description");
     let location = document.getElementById("location");
     let time = document.getElementById("time");
-    selectedAreas.add(temp.value, humidity.value, description.value, description.value, location.value, time.value);
-    console.log(selectedAreas);
+    e.preventDefault();
+    selectedAreas.add(location.textContent, temp.textContent, humidity.textContent, description.textContent, time.textContent);
+    console.log(selectedAreas.list);
 };
 
-addBtn.addEventListener("click", (event) => 
-    addThing()
-);
+function remThing(e){
+    e.preventDefault();
+    let remStatement = selectedAreas.list.find((area) => {
+        return area.time === timeParagraph.textContent && area.location === locationH4.textContent
+    });
+    if (remStatement){selectedAreas.remove(remStatement.id)};
+    updateDOMList();
+ };
 
-refreshBtn.addEventListener("click", (event) => {
-    console.log(locationData.value);
-    fetchArea(event, cityName, stateCode, countryCode);
+addBtn.addEventListener("click", (event) => {
+    addThing(event) 
+    updateDOMList()
 });
 
+refreshBtn.addEventListener("click", (event) => {
+    let locArr = locationH4.textContent.split(", ");
+    fetchArea(event, locArr[0], locArr[1], locArr[2]);
+});
 
-function fetchArea(event, cityName, stateCode, countryCode) {
-    console.log(cityName.value);
+removeBtn.addEventListener("click", (event) => {
+    remThing(event) 
+    updateDOMList()
+    
+});
+
+function fetchArea(event, city, state, country) {
+    console.log(city, state, country);
     event.preventDefault();
-    fetch(`${url}?q=${cityName.value},${stateCode.value},${countryCode.value}&limit=1&appid=${apiKey}`)
+    fetch(`${url}?q=${city},${state},${country}&limit=1&appid=${apiKey}`)
     .then((response) => {
         console.log(response);
         return response.json();
@@ -116,5 +134,30 @@ function parseWeatherData(weatherData){
     humidityP.textContent = dataHumidity;
     let descriptionP = document.getElementById("description");
     descriptionP.textContent = dataDescription;
+    let date = new Date();
+    let month = date.getMonth();
+    let day = date.getDate();
+    let hour = date.getHours();
+    let minute = date.getMinutes();
+    let second = date.getSeconds();
+    let dateStr = `Time searched: ${month}/${day}, ${hour}:${minute}.${second}`;
+    timeParagraph.textContent = dateStr;
 }
 
+function updateDOMList() {
+    areaSaved.innerHTML = "";
+    selectedAreas.list.forEach((savedArea) => {
+        const li = document.createElement('li');
+        li.textContent = `${savedArea.location}, ${savedArea.temp}, ${savedArea.humidity}, ${savedArea.description}, ${savedArea.time}`;
+        li.addEventListener("click", () => showWeatherDetails(savedArea));
+        areaSaved.appendChild(li);
+    });
+}
+
+function showWeatherDetails(savedArea) {
+    locationH4.textContent = savedArea.location;
+    tempParagraph.textContent = savedArea.temp;
+    humidityParagraph.textContent = savedArea.humidity;
+    descriptionParagraph.textContent = savedArea.description;
+    timeParagraph.textContent = savedArea.time;
+}
